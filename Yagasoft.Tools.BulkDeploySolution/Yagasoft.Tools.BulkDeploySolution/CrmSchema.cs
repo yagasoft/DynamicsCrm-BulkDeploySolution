@@ -47,6 +47,16 @@ namespace Yagasoft.Tools.BulkDeploySolution
 			}
 		}
 		/// <summary>
+		/// Gets a binding to the set of all <see cref="ImportJob"/> entities.
+		/// </summary>
+		public System.Linq.IQueryable<ImportJob> ImportJobSet
+		{
+			get
+			{
+				return this.CreateQuery<ImportJob>();
+			}
+		}
+		/// <summary>
 		/// Gets a binding to the set of all <see cref="Solution"/> entities.
 		/// </summary>
 		public System.Linq.IQueryable<Solution> SolutionSet
@@ -1850,6 +1860,778 @@ namespace Yagasoft.Tools.BulkDeploySolution
 
 	#endregion
 
+	#region ImportJob
+
+	/// <summary>
+	/// 'ImportJob'.<br />
+	/// For internal use only.
+	/// </summary>
+	[ExcludeFromCodeCoverage]
+	[DebuggerNonUserCode]
+	[DataContract, EntityLogicalName("importjob")]
+	public partial class ImportJob : GeneratedEntity<ImportJob.RelationName>
+	{
+		
+		public ImportJob() : 
+				base(EntityLogicalName)
+		{
+		}
+		
+		public const string DisplayName = "Import Job";
+		public const string SchemaName = "ImportJob";
+		public const string EntityLogicalName = "importjob";
+		public const int EntityTypeCode = 9107;
+		
+		public class RelationName : RelationNameBase
+		{
+			public RelationName(string name) : base(name)
+			{}
+		}
+
+
+		#region Attributes
+
+		[AttributeLogicalName("importjobid"), DataMember]
+		public override System.Guid Id
+		{
+			get
+			{
+				return (ImportJobId == null || ImportJobId == Guid.Empty) ? base.Id : ImportJobId.GetValueOrDefault();
+			}
+			
+			set
+			{
+                if (value == Guid.Empty) {
+                    Attributes.Remove("importjobid");
+                    base.Id = value;
+                } else {
+				    ImportJobId = value;
+                }
+			}
+		}
+
+        /// <summary>
+        ///  
+		/// 'CompletedOn'.<br />
+        /// Date and time when the import job was completed.
+        /// </summary>
+		[AttributeLogicalName("completedon")]
+		public DateTime? CompletedOn
+		{
+			get
+			{
+				var value = GetAttributeValue<DateTime?>("completedon");
+				if (value == null && backupAttributeCollection != null && backupAttributeCollection.Contains("completedon"))
+				    value = (DateTime?) backupAttributeCollection["completedon"];
+			    return value;
+			}
+			set
+			{
+				OnPropertyChanging("CompletedOn");
+					SetAttributeValue("completedon", value);
+				OnPropertyChanged("CompletedOn");
+			}
+		}
+
+        /// <summary>
+        ///  
+		/// 'CreatedBy'.<br />
+        /// Unique identifier of the user who created the importJob.
+        /// </summary>
+		[AttributeLogicalName("createdby")]
+		public Guid? CreatedBy
+		{
+			get
+			{
+				var value = GetAttributeValue<EntityReference>("createdby");
+				if (value == null && backupAttributeCollection != null && backupAttributeCollection.Contains("createdby"))
+				    value = (EntityReference) backupAttributeCollection["createdby"];
+                return value == null ? (Guid?) null : value.Id;
+			}
+			set
+			{
+				OnPropertyChanging("CreatedBy");
+                if (value != null)
+				    SetAttributeValue("createdby", new EntityReference("systemuser", value.Value));
+                else
+					SetAttributeValue("createdby", value);
+				OnPropertyChanged("CreatedBy");
+			}
+		}
+
+        public string CreatedByName
+        {
+		    get
+		    {
+				var value = GetAttributeValue<EntityReference>("createdby");
+				if (value == null && backupAttributeCollection != null && backupAttributeCollection.Contains("createdby"))
+				    value = (EntityReference) backupAttributeCollection["createdby"];
+                return value == null ? (string) null : value.Name;
+            }
+            set
+            {}
+        }
+
+        /// <summary>
+        ///  
+		/// 'CreatedOn'.<br />
+        /// Date and time when the import job record was created.
+        /// </summary>
+		[AttributeLogicalName("createdon")]
+		public DateTime? CreatedOn
+		{
+			get
+			{
+				var value = GetAttributeValue<DateTime?>("createdon");
+				if (value == null && backupAttributeCollection != null && backupAttributeCollection.Contains("createdon"))
+				    value = (DateTime?) backupAttributeCollection["createdon"];
+			    return value;
+			}
+			set
+			{
+				OnPropertyChanging("CreatedOn");
+					SetAttributeValue("createdon", value);
+				OnPropertyChanged("CreatedOn");
+			}
+		}
+
+        /// <summary>
+        ///  
+		/// 'CreatedOnBehalfBy'.<br />
+        /// Unique identifier of the delegate user who created the import job record.
+        /// </summary>
+		[AttributeLogicalName("createdonbehalfby")]
+		public Guid? CreatedByDelegate_CreatedOnBehalfBy
+		{
+			get
+			{
+				var value = GetAttributeValue<EntityReference>("createdonbehalfby");
+				if (value == null && backupAttributeCollection != null && backupAttributeCollection.Contains("createdonbehalfby"))
+				    value = (EntityReference) backupAttributeCollection["createdonbehalfby"];
+                return value == null ? (Guid?) null : value.Id;
+			}
+			set
+			{
+				OnPropertyChanging("CreatedByDelegate_CreatedOnBehalfBy");
+                if (value != null)
+				    SetAttributeValue("createdonbehalfby", new EntityReference("systemuser", value.Value));
+                else
+					SetAttributeValue("createdonbehalfby", value);
+				OnPropertyChanged("CreatedByDelegate_CreatedOnBehalfBy");
+			}
+		}
+
+        public string CreatedByDelegate_CreatedOnBehalfByName
+        {
+		    get
+		    {
+				var value = GetAttributeValue<EntityReference>("createdonbehalfby");
+				if (value == null && backupAttributeCollection != null && backupAttributeCollection.Contains("createdonbehalfby"))
+				    value = (EntityReference) backupAttributeCollection["createdonbehalfby"];
+                return value == null ? (string) null : value.Name;
+            }
+            set
+            {}
+        }
+
+        /// <summary>
+        /// [MaximumLength=1073741823] 
+		/// 'Data'.<br />
+        /// Unstructured data associated with the import job.
+        /// </summary>
+		[AttributeLogicalName("data"), MaxLength(1073741823)]
+		public string Data
+		{
+			get
+			{
+				var value = GetAttributeValue<string>("data");
+				if (value == null && backupAttributeCollection != null && backupAttributeCollection.Contains("data"))
+				    value = (string) backupAttributeCollection["data"];
+			    return value;
+			}
+			set
+			{
+				OnPropertyChanging("Data");
+					SetAttributeValue("data", value);
+				OnPropertyChanged("Data");
+			}
+		}
+
+        /// <summary>
+        ///  
+		/// 'ImportJobId'.<br />
+        /// Unique identifier of the import job.
+        /// </summary>
+		[AttributeLogicalName("importjobid")]
+		public Guid? ImportJobId
+		{
+			get
+			{
+				var value = GetAttributeValue<Guid?>("importjobid");
+				if (value == null && backupAttributeCollection != null && backupAttributeCollection.Contains("importjobid"))
+				    value = (Guid?) backupAttributeCollection["importjobid"];
+			    return value;
+			}
+			set
+			{
+				OnPropertyChanging("ImportJobId");
+                if (value != null)
+					SetAttributeValue("importjobid", value);
+				if (value != null)
+					base.Id = value.Value;
+				else
+					Id = System.Guid.Empty;
+				OnPropertyChanged("ImportJobId");
+			}
+		}
+
+        /// <summary>
+        ///  
+		/// 'ModifiedBy'.<br />
+        /// Unique identifier of the user who modified the importJob.
+        /// </summary>
+		[AttributeLogicalName("modifiedby")]
+		public Guid? ModifiedBy
+		{
+			get
+			{
+				var value = GetAttributeValue<EntityReference>("modifiedby");
+				if (value == null && backupAttributeCollection != null && backupAttributeCollection.Contains("modifiedby"))
+				    value = (EntityReference) backupAttributeCollection["modifiedby"];
+                return value == null ? (Guid?) null : value.Id;
+			}
+			set
+			{
+				OnPropertyChanging("ModifiedBy");
+                if (value != null)
+				    SetAttributeValue("modifiedby", new EntityReference("systemuser", value.Value));
+                else
+					SetAttributeValue("modifiedby", value);
+				OnPropertyChanged("ModifiedBy");
+			}
+		}
+
+        public string ModifiedByName
+        {
+		    get
+		    {
+				var value = GetAttributeValue<EntityReference>("modifiedby");
+				if (value == null && backupAttributeCollection != null && backupAttributeCollection.Contains("modifiedby"))
+				    value = (EntityReference) backupAttributeCollection["modifiedby"];
+                return value == null ? (string) null : value.Name;
+            }
+            set
+            {}
+        }
+
+        /// <summary>
+        ///  
+		/// 'ModifiedOn'.<br />
+        /// Date and time when the import job was last modified.
+        /// </summary>
+		[AttributeLogicalName("modifiedon")]
+		public DateTime? ModifiedOn
+		{
+			get
+			{
+				var value = GetAttributeValue<DateTime?>("modifiedon");
+				if (value == null && backupAttributeCollection != null && backupAttributeCollection.Contains("modifiedon"))
+				    value = (DateTime?) backupAttributeCollection["modifiedon"];
+			    return value;
+			}
+			set
+			{
+				OnPropertyChanging("ModifiedOn");
+					SetAttributeValue("modifiedon", value);
+				OnPropertyChanged("ModifiedOn");
+			}
+		}
+
+        /// <summary>
+        ///  
+		/// 'ModifiedOnBehalfBy'.<br />
+        /// Unique identifier of the delegate user who modified the import job record.
+        /// </summary>
+		[AttributeLogicalName("modifiedonbehalfby")]
+		public Guid? CreatedByDelegate_ModifiedOnBehalfBy
+		{
+			get
+			{
+				var value = GetAttributeValue<EntityReference>("modifiedonbehalfby");
+				if (value == null && backupAttributeCollection != null && backupAttributeCollection.Contains("modifiedonbehalfby"))
+				    value = (EntityReference) backupAttributeCollection["modifiedonbehalfby"];
+                return value == null ? (Guid?) null : value.Id;
+			}
+			set
+			{
+				OnPropertyChanging("CreatedByDelegate_ModifiedOnBehalfBy");
+                if (value != null)
+				    SetAttributeValue("modifiedonbehalfby", new EntityReference("systemuser", value.Value));
+                else
+					SetAttributeValue("modifiedonbehalfby", value);
+				OnPropertyChanged("CreatedByDelegate_ModifiedOnBehalfBy");
+			}
+		}
+
+        public string CreatedByDelegate_ModifiedOnBehalfByName
+        {
+		    get
+		    {
+				var value = GetAttributeValue<EntityReference>("modifiedonbehalfby");
+				if (value == null && backupAttributeCollection != null && backupAttributeCollection.Contains("modifiedonbehalfby"))
+				    value = (EntityReference) backupAttributeCollection["modifiedonbehalfby"];
+                return value == null ? (string) null : value.Name;
+            }
+            set
+            {}
+        }
+
+        /// <summary>
+        /// [MaximumLength=256] 
+		/// 'Name'.<br />
+        /// Name of the import job.
+        /// </summary>
+		[AttributeLogicalName("name"), MaxLength(256)]
+		public string ImportJobName
+		{
+			get
+			{
+				var value = GetAttributeValue<string>("name");
+				if (value == null && backupAttributeCollection != null && backupAttributeCollection.Contains("name"))
+				    value = (string) backupAttributeCollection["name"];
+			    return value;
+			}
+			set
+			{
+				OnPropertyChanging("ImportJobName");
+					SetAttributeValue("name", value);
+				OnPropertyChanged("ImportJobName");
+			}
+		}
+
+        /// <summary>
+        ///  
+		/// 'OrganizationId'.<br />
+        /// Unique identifier of the organization associated with the importjob.
+        /// </summary>
+		[AttributeLogicalName("organizationid")]
+		public Guid? Organization
+		{
+			get
+			{
+				var value = GetAttributeValue<EntityReference>("organizationid");
+				if (value == null && backupAttributeCollection != null && backupAttributeCollection.Contains("organizationid"))
+				    value = (EntityReference) backupAttributeCollection["organizationid"];
+                return value == null ? (Guid?) null : value.Id;
+			}
+			set
+			{
+				OnPropertyChanging("Organization");
+                if (value != null)
+				    SetAttributeValue("organizationid", new EntityReference("organization", value.Value));
+                else
+					SetAttributeValue("organizationid", value);
+				OnPropertyChanged("Organization");
+			}
+		}
+
+        public string OrganizationName
+        {
+		    get
+		    {
+				var value = GetAttributeValue<EntityReference>("organizationid");
+				if (value == null && backupAttributeCollection != null && backupAttributeCollection.Contains("organizationid"))
+				    value = (EntityReference) backupAttributeCollection["organizationid"];
+                return value == null ? (string) null : value.Name;
+            }
+            set
+            {}
+        }
+
+        /// <summary>
+        /// [Range(0, 100)] 
+		/// 'Progress'.<br />
+        /// Import Progress Percentage.
+        /// </summary>
+		[AttributeLogicalName("progress"), InRange("0", "100", typeof(double))]
+		public double? Progress
+		{
+			get
+			{
+				var value = GetAttributeValue<double?>("progress");
+				if (value == null && backupAttributeCollection != null && backupAttributeCollection.Contains("progress"))
+				    value = (double?) backupAttributeCollection["progress"];
+			    return value;
+			}
+			set
+			{
+				OnPropertyChanging("Progress");
+					SetAttributeValue("progress", value);
+				OnPropertyChanged("Progress");
+			}
+		}
+
+        /// <summary>
+        /// [MaximumLength=256] 
+		/// 'SolutionName'.<br />
+        /// Unique identifier of the solution.
+        /// </summary>
+		[AttributeLogicalName("solutionname"), MaxLength(256)]
+		public string SolutionName
+		{
+			get
+			{
+				var value = GetAttributeValue<string>("solutionname");
+				if (value == null && backupAttributeCollection != null && backupAttributeCollection.Contains("solutionname"))
+				    value = (string) backupAttributeCollection["solutionname"];
+			    return value;
+			}
+			set
+			{
+				OnPropertyChanging("SolutionName");
+					SetAttributeValue("solutionname", value);
+				OnPropertyChanged("SolutionName");
+			}
+		}
+
+        /// <summary>
+        ///  
+		/// 'StartedOn'.<br />
+        /// Date and time when the import job was started.
+        /// </summary>
+		[AttributeLogicalName("startedon")]
+		public DateTime? StartedOn
+		{
+			get
+			{
+				var value = GetAttributeValue<DateTime?>("startedon");
+				if (value == null && backupAttributeCollection != null && backupAttributeCollection.Contains("startedon"))
+				    value = (DateTime?) backupAttributeCollection["startedon"];
+			    return value;
+			}
+			set
+			{
+				OnPropertyChanging("StartedOn");
+					SetAttributeValue("startedon", value);
+				OnPropertyChanged("StartedOn");
+			}
+		}
+
+        /// <summary>
+        /// [Range(-1, 2147483647)] 
+		/// 'TimeZoneRuleVersionNumber'.<br />
+        /// For internal use only.
+        /// </summary>
+		[AttributeLogicalName("timezoneruleversionnumber"), InRange("-1", "2147483647", typeof(int))]
+		public int? TimeZoneRuleVersionNumber
+		{
+			get
+			{
+				var value = GetAttributeValue<int?>("timezoneruleversionnumber");
+				if (value == null && backupAttributeCollection != null && backupAttributeCollection.Contains("timezoneruleversionnumber"))
+				    value = (int?) backupAttributeCollection["timezoneruleversionnumber"];
+			    return value;
+			}
+			set
+			{
+				OnPropertyChanging("TimeZoneRuleVersionNumber");
+					SetAttributeValue("timezoneruleversionnumber", value);
+				OnPropertyChanged("TimeZoneRuleVersionNumber");
+			}
+		}
+
+        /// <summary>
+        /// [Range(-1, 2147483647)] 
+		/// 'UTCConversionTimeZoneCode'.<br />
+        /// Time zone code that was in use when the record was created.
+        /// </summary>
+		[AttributeLogicalName("utcconversiontimezonecode"), InRange("-1", "2147483647", typeof(int))]
+		public int? UTCConversionTimeZoneCode
+		{
+			get
+			{
+				var value = GetAttributeValue<int?>("utcconversiontimezonecode");
+				if (value == null && backupAttributeCollection != null && backupAttributeCollection.Contains("utcconversiontimezonecode"))
+				    value = (int?) backupAttributeCollection["utcconversiontimezonecode"];
+			    return value;
+			}
+			set
+			{
+				OnPropertyChanging("UTCConversionTimeZoneCode");
+					SetAttributeValue("utcconversiontimezonecode", value);
+				OnPropertyChanged("UTCConversionTimeZoneCode");
+			}
+		}
+
+		#endregion
+
+		#region Relationships
+
+		
+		public static class RelationNames {
+		}
+
+
+		protected override IDictionary<string, object[]> RelationProperties { get {
+			if (relationProperties != null) return relationProperties;
+			relationProperties = new Dictionary<string, object[]>();
+			return relationProperties; } }
+
+
+		#endregion
+
+		/// <summary>
+		/// Constructor for populating via LINQ queries given a LINQ anonymous type
+		/// <param name="anonymousType">LINQ anonymous type.</param>
+		/// </summary>
+		public ImportJob(object anonymousType) : 
+				this()
+		{
+            foreach (var p in anonymousType.GetType().GetProperties())
+            {
+                var value = p.GetValue(anonymousType, null);
+                if (p.PropertyType == typeof(System.Guid))
+                {
+                    // Type is Guid, must be Id
+                    base.Id = (System.Guid)value;
+                    Attributes["importjobid"] = base.Id;
+               }
+                else if (p.Name == "FormattedValues")
+                {
+                    // Add Support for FormattedValues
+                    FormattedValues.AddRange((FormattedValueCollection)value);
+                }
+                else
+                {
+                    Attributes[p.Name.ToLower()] = value;
+                }
+            }
+		}
+
+
+		#region Label/value pairs
+
+		#endregion
+
+
+		#region Metadata
+
+
+		#region Enums
+
+		public static class Enums
+		{
+			/// <summary>
+			/// Gets the label corresponding to the option-set's value using its logical name,
+			/// the value within, and the language code.
+			/// </summary>
+			/// <param name="logicalName">The logical name of the option-set in CRM</param>
+			/// <param name="constant">The value from the option-set</param>
+			/// <param name="languageCode">The language code from CRM</param>
+			/// <returns></returns>
+			public static string GetLabel(string logicalName, int constant, int languageCode = 1033)
+			{
+				return GeneratorHelpers.GetLabel(logicalName, constant, typeof(Enums), languageCode);
+			}
+			/// <summary>
+			/// Gets the value corresponding to the option-set's label using its logical name,
+			/// the value within, and the language code.
+			/// </summary>
+			/// <param name="logicalName">The logical name of the option-set in CRM</param>
+			/// <param name="label">The label from the option-set</param>
+			/// <param name="languageCode">The language code from CRM</param>
+			/// <returns>The value corresponding to the label</returns>
+			public static int GetValue(string logicalName, string label, int languageCode = 1033)
+			{
+				return GeneratorHelpers.GetValue(logicalName, label, typeof(Enums), languageCode);
+			}
+
+			#region Logical names
+
+			public static class Names
+			{
+			}
+
+			#endregion
+
+			#region Labels
+
+			public static class Labels
+			{
+			}
+
+			#endregion
+		}
+
+		#endregion
+
+		#region Fields
+
+		public static class Fields
+		{
+			#region Logical names
+
+			public const string CompletedOn = "completedon";
+			public const string CreatedBy = "createdby";
+			public const string CreatedOn = "createdon";
+			public const string CreatedByDelegate_CreatedOnBehalfBy = "createdonbehalfby";
+			public const string Data = "data";
+			public const string ImportJobId = "importjobid";
+			public const string ModifiedBy = "modifiedby";
+			public const string ModifiedOn = "modifiedon";
+			public const string CreatedByDelegate_ModifiedOnBehalfBy = "modifiedonbehalfby";
+			public const string ImportJobName = "name";
+			public const string Organization = "organizationid";
+			public const string Progress = "progress";
+			public const string SolutionName = "solutionname";
+			public const string StartedOn = "startedon";
+			public const string TimeZoneRuleVersionNumber = "timezoneruleversionnumber";
+			public const string UTCConversionTimeZoneCode = "utcconversiontimezonecode";
+
+			#endregion
+
+			#region Schema names
+
+			public static class Schema
+			{
+				public const string CompletedOn = "CompletedOn";
+				public const string CreatedBy = "CreatedBy";
+				public const string CreatedOn = "CreatedOn";
+				public const string CreatedByDelegate_CreatedOnBehalfBy = "CreatedOnBehalfBy";
+				public const string Data = "Data";
+				public const string ImportJobId = "ImportJobId";
+				public const string ModifiedBy = "ModifiedBy";
+				public const string ModifiedOn = "ModifiedOn";
+				public const string CreatedByDelegate_ModifiedOnBehalfBy = "ModifiedOnBehalfBy";
+				public const string ImportJobName = "Name";
+				public const string Organization = "OrganizationId";
+				public const string Progress = "Progress";
+				public const string SolutionName = "SolutionName";
+				public const string StartedOn = "StartedOn";
+				public const string TimeZoneRuleVersionNumber = "TimeZoneRuleVersionNumber";
+				public const string UTCConversionTimeZoneCode = "UTCConversionTimeZoneCode";
+			}
+
+			#endregion
+
+			#region Labels
+
+			public static class Labels
+			{
+				public static class CompletedOn
+				{
+					public const string _1033 = "Completed On";
+				}
+
+				public static class CreatedBy
+				{
+					public const string _1033 = "Created By";
+				}
+
+				public static class CreatedOn
+				{
+					public const string _1033 = "Created On";
+				}
+
+				public static class CreatedByDelegate_CreatedOnBehalfBy
+				{
+					public const string _1033 = "Created By (Delegate)";
+				}
+
+				public static class Data
+				{
+					public const string _1033 = "Data";
+				}
+
+				public static class ImportJobId
+				{
+					public const string _1033 = "Import Job";
+				}
+
+				public static class ModifiedBy
+				{
+					public const string _1033 = "Modified By";
+				}
+
+				public static class ModifiedOn
+				{
+					public const string _1033 = "Modified On";
+				}
+
+				public static class CreatedByDelegate_ModifiedOnBehalfBy
+				{
+					public const string _1033 = "Created By (Delegate)";
+				}
+
+				public static class ImportJobName
+				{
+					public const string _1033 = "Import Job Name";
+				}
+
+				public static class Organization
+				{
+					public const string _1033 = "Organization";
+				}
+
+				public static class Progress
+				{
+					public const string _1033 = "Progress";
+				}
+
+				public static class SolutionName
+				{
+					public const string _1033 = "SolutionName";
+				}
+
+				public static class StartedOn
+				{
+					public const string _1033 = "Started On";
+				}
+
+				public static class TimeZoneRuleVersionNumber
+				{
+				}
+
+				public static class UTCConversionTimeZoneCode
+				{
+				}
+
+			}
+
+			#endregion
+		}
+
+		#endregion
+
+		#region Relations
+
+		public static class Relations
+		{
+			public static class OneToN
+			{
+			}
+			
+			public static class NToOne
+			{
+
+				public static class Lookups
+				{
+				}
+			}
+
+			public static class NToN
+			{
+
+			}
+		}
+
+		#endregion
+
+		#endregion
+	}
+
+	#endregion
+
 	#region Solution
 
 	/// <summary>
@@ -2791,9 +3573,7 @@ namespace Yagasoft.Tools.BulkDeploySolution
 				public static class Isinternalsolution 
 				{
 					public const string Yes_1033 = "Yes";
-					public const string Yes_1025 = "نعم";
 					public const string No_1033 = "No";
-					public const string No_1025 = "لا";
 
 					public static int GetValue(string label, int languageCode = 1033)
 					{
@@ -2804,9 +3584,7 @@ namespace Yagasoft.Tools.BulkDeploySolution
 				public static class PackageType 
 				{
 					public const string Managed_1033 = "Managed";
-					public const string Managed_1025 = "مدار";
 					public const string Unmanaged_1033 = "Unmanaged";
-					public const string Unmanaged_1025 = "غير مدار";
 
 					public static int GetValue(string label, int languageCode = 1033)
 					{
@@ -2817,9 +3595,7 @@ namespace Yagasoft.Tools.BulkDeploySolution
 				public static class IsVisibleOutsidePlatform 
 				{
 					public const string Yes_1033 = "Yes";
-					public const string Yes_1025 = "نعم";
 					public const string No_1033 = "No";
-					public const string No_1025 = "لا";
 
 					public static int GetValue(string label, int languageCode = 1033)
 					{
@@ -2830,11 +3606,8 @@ namespace Yagasoft.Tools.BulkDeploySolution
 				public static class SolutionType 
 				{
 					public const string None_1033 = "None";
-					public const string None_1025 = "‏‫لا شيء‬";
 					public const string Snapshot_1033 = "Snapshot";
-					public const string Snapshot_1025 = "لقطة سريعة";
 					public const string Internal_1033 = "Internal";
-					public const string Internal_1025 = "‏‏داخلي";
 
 					public static int GetValue(string label, int languageCode = 1033)
 					{
@@ -2923,85 +3696,71 @@ namespace Yagasoft.Tools.BulkDeploySolution
 				public static class ConfigurationPage
 				{
 					public const string _1033 = "Configuration Page";
-					public const string _1025 = "صفحة التكوين";
 				}
 
 				public static class CreatedBy
 				{
 					public const string _1033 = "Created By";
-					public const string _1025 = "منشأ بواسطة";
 				}
 
 				public static class CreatedOn
 				{
 					public const string _1033 = "Created On";
-					public const string _1025 = "تاريخ الإنشاء";
 				}
 
 				public static class CreatedByDelegate
 				{
 					public const string _1033 = "Created By (Delegate)";
-					public const string _1025 = "قام بإنشائه (المفوّض)";
 				}
 
 				public static class Description
 				{
 					public const string _1033 = "Description";
-					public const string _1025 = "الوصف";
 				}
 
 				public static class DisplayName_FriendlyName
 				{
 					public const string _1033 = "Display Name";
-					public const string _1025 = "اسم العرض";
 				}
 
 				public static class InstalledOn
 				{
 					public const string _1033 = "Installed On";
-					public const string _1025 = "مثبت على";
 				}
 
 				public static class PackageType
 				{
 					public const string _1033 = "Package Type";
-					public const string _1025 = "نوع الحزمة";
 				}
 
 				public static class IsVisibleOutsidePlatform
 				{
 					public const string _1033 = "Is Visible Outside Platform";
-					public const string _1025 = "هل هو مرئي خارج النظام الأساسي";
 				}
 
 				public static class ModifiedBy
 				{
 					public const string _1033 = "Modified By";
-					public const string _1025 = "تعديل بواسطة";
 				}
 
 				public static class ModifiedOn
 				{
 					public const string _1033 = "Modified On";
-					public const string _1025 = "تاريخ التعديل";
 				}
 
 				public static class ModifiedByDelegate
 				{
 					public const string _1033 = "Modified By (Delegate)";
-					public const string _1025 = "قام بالتعديل (المفوّض)";
 				}
 
 				public static class Organization
 				{
 					public const string _1033 = "Organization";
-					public const string _1025 = "المؤسسة";
 				}
 
 				public static class ParentSolution
 				{
 					public const string _1033 = "Parent Solution";
-					public const string _1025 = "الحل الأصل";
 				}
 
 				public static class PinpointAssetId
@@ -3023,37 +3782,31 @@ namespace Yagasoft.Tools.BulkDeploySolution
 				public static class Publisher
 				{
 					public const string _1033 = "Publisher";
-					public const string _1025 = "الناشر";
 				}
 
 				public static class SolutionIdentifierId
 				{
 					public const string _1033 = "Solution Identifier";
-					public const string _1025 = "معرف الحل";
 				}
 
 				public static class SolutionPackageVersion
 				{
 					public const string _1033 = "Solution Package Version";
-					public const string _1025 = "‏‏إصدار حزمة الحل";
 				}
 
 				public static class SolutionType
 				{
 					public const string _1033 = "Solution Type";
-					public const string _1025 = "نوع الحل";
 				}
 
 				public static class Name
 				{
 					public const string _1033 = "Name";
-					public const string _1025 = "الاسم";
 				}
 
 				public static class Version
 				{
 					public const string _1033 = "Version";
-					public const string _1025 = "‏‏الإصدار";
 				}
 
 				public static class VersionNumber

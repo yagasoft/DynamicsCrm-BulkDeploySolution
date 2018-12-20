@@ -1,0 +1,7 @@
+{
+	"sourceConnectionString": "AuthType=AD; Url=http://127.0.0.1/Test1; Domain=DOMAIN; Username=USER; Password=PASS",
+	"destinationConnectionStrings": [
+		"AuthType=AD; Url=http://127.0.0.1/Test2; Domain=DOMAIN; Username=USER; Password=PASS",
+		"AuthType=AD; Url=http://127.0.0.1/Test3; Domain=DOMAIN; Username=USER; Password=PASS"
+	]
+}

@@ -454,3 +454,5 @@ nuget-access-key.txt
 
 # Logs
 log.csv
+/Yagasoft.Tools.BulkDeploySolution/Yagasoft.Tools.BulkDeploySolution/solutions.json
+/Yagasoft.Tools.BulkDeploySolution/Yagasoft.Tools.BulkDeploySolution/connections.json

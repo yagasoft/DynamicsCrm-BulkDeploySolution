@@ -2,14 +2,17 @@
 
 using System;
 using System.Collections.Generic;
+using System.Configuration;
 using System.IO;
 using System.IO.Compression;
 using System.Linq;
 using System.Text;
 using System.Text.RegularExpressions;
+using System.Threading;
 using System.Xml;
 using LinkDev.Libraries.Common;
 using Microsoft.Crm.Sdk.Messages;
+using Microsoft.Xrm.Sdk.Messages;
 using Microsoft.Xrm.Sdk.Query;
 using Microsoft.Xrm.Tooling.Connector;
 using Newtonsoft.Json;
@@ -22,20 +25,26 @@ namespace Yagasoft.Tools.BulkDeploySolution
 	/// <summary>
 	///     Author: Ahmed el-Sawalhy (yagasoft.com)
 	/// </summary>
+	[Log]
 	class Program
 	{
 		private static CrmLog log;
+
+		private static readonly List<string> configs = new List<string>();
+		private static string connectionFile;
 
 		private static bool isAutoRetryOnError;
 		private static int retryCount;
 		private static bool isPauseOnExit = true;
 
+		[NoLog]
 		static int Main(string[] args)
 		{
-			args.RequireCountAtLeast(1, "Command Line Arguments",
+			args.RequireCountAtLeast(2, "Command Line Arguments",
 				"A JSON file name must be passed to the program as argument.");
 
-			log = new CrmLog(true, LogLevel.Debug);
+			var logLevel = ConfigurationManager.AppSettings["LogLevel"];
+			log = new CrmLog(true, (LogLevel)int.Parse(logLevel));
 			log.InitOfflineLog("log.csv", false,
 				new FileConfiguration
 				{
@@ -48,68 +57,20 @@ namespace Yagasoft.Tools.BulkDeploySolution
 			{
 				ParseCmdArgs(args);
 
-				var settings = GetConfigurationParams(args[0]);
-				var importSolutions = new List<ExportedSolution>();
-
-				var exportSolutions = settings.SolutionConfigs
-					.Where(s => s.SolutionName.IsNotEmpty()).ToArray();
-
-				if (exportSolutions.Any())
+				foreach (var config in configs)
 				{
-					importSolutions.AddRange(ExportSolutions(settings.SourceConnectionString, exportSolutions));
-				}
+					log.Log($"Parsing config file {config} ...");
+					var settings = GetConfigurationParams(config);
+					var result = ProcessConfiguration(settings);
+					log.Log($"Finished parsing config file {config}.");
 
-				var loadSolutionPaths = settings.SolutionConfigs
-					.Where(s => s.SourcePath.IsNotEmpty() && File.Exists(s.SourcePath))
-					.Select(s => s.SourcePath).ToArray();
-
-				if (loadSolutionPaths.Any())
-				{
-					importSolutions.AddRange(LoadSolutions(loadSolutionPaths));
-				}
-
-				var failures = new Dictionary<string, List<ExportedSolution>>();
-				ImportSolutions(settings.DestinationConnectionStrings, importSolutions, failures);
-
-				while (failures.Any())
-				{
-					log.Log("Some solutions failed to import.", LogLevel.Warning);
-
-					if (isAutoRetryOnError)
+					if (result > 0)
 					{
-						log.Log($"Remaining retries: {retryCount}.");
-
-						if (retryCount-- <= 0)
-						{
-							log.Log("Retry count has expired.", LogLevel.Warning);
-							return 1;
-						}
-
-						log.Log($"Automatically retrying to import ...");
-					}
-					else
-					{
-						Console.WriteLine();
-						Console.Write($"{failures.Sum(p => p.Value.Count)} total failures. Try again [y/n]? ");
-						var answer = Console.ReadKey().KeyChar;
-						Console.WriteLine();
-
-						if (answer != 'y')
-						{
-							return 1;
-						}
-
-						Console.WriteLine();
-					}
-
-					var failuresCopy = failures.ToArray();
-					failures = new Dictionary<string, List<ExportedSolution>>();
-
-					foreach (var pair in failuresCopy)
-					{
-						ImportSolutions(new[] { pair.Key }, pair.Value, failures);
+						return result;
 					}
 				}
+
+				return 0;
 			}
 			catch (Exception e)
 			{
@@ -128,25 +89,121 @@ namespace Yagasoft.Tools.BulkDeploySolution
 					Console.ReadKey();
 				}
 			}
+		}
+
+		private static int ProcessConfiguration(Settings settings)
+		{
+			settings.Require(nameof(settings));
+
+			var importSolutions = new List<ExportedSolution>();
+
+			var exportSolutions = settings.SolutionConfigs
+				.Where(s => s.SolutionName.IsNotEmpty()).ToArray();
+
+			if (connectionFile.IsNotEmpty())
+			{
+				var connectionParams = GetConnectionParams();
+
+				if (settings.SourceConnectionString.IsEmpty())
+				{
+					log.Log("Using default source connection string from file.");
+					settings.SourceConnectionString = connectionParams.SourceConnectionString;
+				}
+
+				if (settings.DestinationConnectionStrings?.Any() != true)
+				{
+					log.Log("Using default destination connection strings from file.");
+					settings.DestinationConnectionStrings = connectionParams.DestinationConnectionStrings;
+				}
+			}
+
+			if (exportSolutions.Any())
+			{
+				importSolutions.AddRange(ExportSolutions(settings.SourceConnectionString, exportSolutions));
+			}
+
+			var loadSolutionsConfig = settings.SolutionConfigs
+				.Where(s => s.SolutionFile.IsNotEmpty())
+				.Select(s => s).ToArray();
+
+			if (loadSolutionsConfig.Any())
+			{
+				importSolutions.AddRange(LoadSolutions(loadSolutionsConfig));
+			}
+
+			var failures = new Dictionary<string, List<ExportedSolution>>();
+			ImportSolutions(settings.DestinationConnectionStrings, importSolutions, failures);
+
+			while (failures.Any())
+			{
+				log.Log("Some solutions failed to import.", LogLevel.Warning);
+
+				if (isAutoRetryOnError)
+				{
+					log.Log($"Remaining retries: {retryCount}.");
+
+					if (retryCount-- <= 0)
+					{
+						log.Log("Retry count has expired.", LogLevel.Warning);
+						return 1;
+					}
+
+					log.Log($"Automatically retrying to import ...");
+				}
+				else
+				{
+					Console.WriteLine();
+					Console.Write($"{failures.Sum(p => p.Value.Count)} total failures. Try again [y/n]? ");
+					var answer = Console.ReadKey().KeyChar;
+					Console.WriteLine();
+
+					if (answer != 'y')
+					{
+						return 1;
+					}
+
+					Console.WriteLine();
+				}
+
+				var failuresCopy = failures.ToArray();
+				failures = new Dictionary<string, List<ExportedSolution>>();
+
+				foreach (var pair in failuresCopy)
+				{
+					ImportSolutions(new[] { pair.Key }, pair.Value, failures);
+				}
+			}
 
 			return 0;
 		}
 
 		public static void ParseCmdArgs(string[] args)
 		{
+			var switches = "frcP";
+			var parsingArgParamsMode = '\0';
+
 			for (var i = 0; i < args.Length; i++)
 			{
 				switch (args[i])
 				{
+					case "-f":
+						ValidateArgumentParam(args, i, switches, "Config File");
+						configs.Add(args[i + 1]);
+						parsingArgParamsMode = 'f';
+						i++;
+						break;
+
+					case "-c":
+						ValidateArgumentParam(args, i, switches, "Connection File");
+						connectionFile = args[i + 1];
+						i++;
+						break;
+
 					case "-r":
 						isAutoRetryOnError = true;
 
-						if (args.Length <= i + 1)
-						{
-							throw new ArgumentNullException("Retry Count",
-								"A retry count must be passed to the program as argument.");
-						}
-						
+						ValidateArgumentParam(args, i, switches, "Retry Count");
+
 						var isParsed = int.TryParse(args[i + 1], out retryCount);
 
 						if (!isParsed)
@@ -154,10 +211,19 @@ namespace Yagasoft.Tools.BulkDeploySolution
 							throw new FormatException("A valid retry count must be passed to the program as argument.");
 						}
 
+						i++;
+
 						break;
 
 					case "-P":
 						isPauseOnExit = false;
+						break;
+
+					default:
+						if (parsingArgParamsMode == 'f')
+						{
+							configs.Add(args[i]);
+						}
 						break;
 				}
 			}
@@ -170,6 +236,27 @@ namespace Yagasoft.Tools.BulkDeploySolution
 			{
 				retryCount.RequireAtLeast(0);
 			}
+		}
+
+		private static void ValidateArgumentParam(string[] args, int i, string switches, string argumentName)
+		{
+			if (args.Length <= i + 1 || switches.Contains(args[i + 1].TrimStart('-')))
+			{
+				throw new ArgumentNullException(argumentName,
+					$"A '{argumentName}' name must be passed to the program as argument.");
+			}
+		}
+
+		private static Settings GetConnectionParams()
+		{
+			if (!File.Exists(connectionFile))
+			{
+				throw new FileNotFoundException("Couldn't find connection file.", connectionFile);
+			}
+
+			var settingsJson = File.ReadAllText(connectionFile);
+			return JsonConvert.DeserializeObject<Settings>(settingsJson,
+				new JsonSerializerSettings { ContractResolver = new CamelCasePropertyNamesContractResolver() });
 		}
 
 		private static Settings GetConfigurationParams(string settingsPath)
@@ -299,16 +386,39 @@ namespace Yagasoft.Tools.BulkDeploySolution
 			return solution?.Version;
 		}
 
-		private static IEnumerable<ExportedSolution> LoadSolutions(IEnumerable<string> loadSolutionPaths)
+		private static string ParseSolutionPath(string folderPath, string fileName)
 		{
-			loadSolutionPaths.Require(nameof(loadSolutionPaths));
+			fileName.RequireNotEmpty(nameof(fileName));
+
+			folderPath = folderPath.IsEmpty() ? "." : folderPath;
+			return Directory.GetFiles(folderPath).FirstOrDefault(path => Regex.IsMatch(Path.GetFileName(path), fileName));
+		}
+
+		private static IEnumerable<ExportedSolution> LoadSolutions(IEnumerable<ImportSolutionConfig> solutionConfigs)
+		{
+			solutionConfigs.Require(nameof(solutionConfigs));
 
 			var solutions = new List<ExportedSolution>();
 
-			foreach (var solutionPath in loadSolutionPaths)
+			foreach (var config in solutionConfigs)
 			{
-				var solution = new ExportedSolution { Data = File.ReadAllBytes(solutionPath) };
-				var xml = GetSolutionXml(solutionPath);
+				var folder = config.SolutionFolder;
+				var file = config.SolutionFile;
+
+				if (file.IsEmpty())
+				{
+					throw new ArgumentNullException("SolutionFile", "File name is empty in config.");
+				}
+
+				var parsedPath = config.IsRegex ? ParseSolutionPath(folder, file) : Path.Combine(folder ?? ".", file);
+
+				if (parsedPath.IsEmpty())
+				{
+					throw new NotFoundException($"Solution file '{file}' could not be found.");
+				}
+
+				var solution = new ExportedSolution { Data = File.ReadAllBytes(parsedPath) };
+				var xml = GetSolutionXml(parsedPath);
 
 				var doc = new XmlDocument();
 				doc.LoadXml(xml);
@@ -351,17 +461,21 @@ namespace Yagasoft.Tools.BulkDeploySolution
 			importSolutions.Require(nameof(importSolutions));
 			failures.Require(nameof(failures));
 
+			if (!importSolutions.Any())
+			{
+				log.LogWarning("No solution to import.");
+				return;
+			}
+
 			foreach (var connectionString in connectionStrings)
 			{
 				var failedSolutionList = new List<ExportedSolution>();
-				var isImported = false;
-				CrmServiceClient destinationService = null;
 
 				try
 				{
 					log.Log($"Importing solutions into '{EscapePassword(connectionString)}' ...");
 
-					destinationService = ConnectToCrm(connectionString);
+					var destinationService = ConnectToCrm(connectionString);
 
 					foreach (var solution in importSolutions)
 					{
@@ -371,8 +485,12 @@ namespace Yagasoft.Tools.BulkDeploySolution
 
 							if (IsSolutionUpdated(solution.SolutionName, solution.Version, destinationService))
 							{
-								ImportSolution(solution, destinationService);
-								isImported = true;
+								var isImported = ImportSolution(solution, destinationService);
+
+								if (!isImported)
+								{
+									failedSolutionList.Add(solution);
+								}
 							}
 							else
 							{
@@ -401,24 +519,11 @@ namespace Yagasoft.Tools.BulkDeploySolution
 					{
 						failures[connectionString] = failedSolutionList;
 					}
-
-					if (isImported)
-					{
-						try
-						{
-							log.Log("Publishing customisations ...");
-							destinationService.Execute(new PublishAllXmlRequest());
-							log.Log("Finished publishing customisations.");
-						}
-						catch (Exception e)
-						{
-							log.Log(e);
-						}
-					}
 				}
 			}
 		}
 
+		[NoLog]
 		private static bool IsSolutionUpdated(string solutionSolutionName, string solutionVersion,
 			CrmServiceClient service)
 		{
@@ -445,24 +550,149 @@ namespace Yagasoft.Tools.BulkDeploySolution
 			return isUpdated;
 		}
 
-		private static void ImportSolution(ExportedSolution solution, CrmServiceClient service)
+		private static bool ImportSolution(ExportedSolution solution, CrmServiceClient service)
 		{
 			solution.Require(nameof(solution));
 			service.Require(nameof(service));
 
+			var importJobId = Guid.NewGuid();
+
 			var request =
-				new ImportSolutionRequest
+				new ExecuteAsyncRequest
 				{
-					CustomizationFile = solution.Data,
-					ConvertToManaged = solution.IsManaged,
-					OverwriteUnmanagedCustomizations = false,
-					PublishWorkflows = true,
-					SkipProductUpdateDependencies = true
+					Request =
+						new ImportSolutionRequest
+						{
+							CustomizationFile = solution.Data,
+							ConvertToManaged = solution.IsManaged,
+							OverwriteUnmanagedCustomizations = false,
+							PublishWorkflows = true,
+							SkipProductUpdateDependencies = true,
+							ImportJobId = importJobId
+						}
 				};
 
 			log.Log($"Importing solution '{solution.SolutionName}' ...");
+
 			service.Execute(request);
+
+			MonitorJobProgress(service, importJobId);
+
+			var job = service.Retrieve("importjob", importJobId, new ColumnSet(ImportJob.Fields.Progress))
+				.ToEntity<ImportJob>();
+
+			var importXmlLog = job.GetAttributeValue<string>("data");
+
+			if (importXmlLog.IsNotEmpty())
+			{
+				var isFailed = ProcessErrorXml(importXmlLog);
+
+				if (isFailed)
+				{
+					return false;
+				}
+			}
+
 			log.Log($"Imported!");
+			log.Log("Publishing customisations ...");
+
+			for (var i = 0; i < 3; i++)
+			{
+				Thread.Sleep(5000);
+
+				try
+				{
+					service.Execute(new PublishAllXmlRequest());
+					log.Log("Finished publishing customisations.");
+					break;
+				}
+				catch (Exception e)
+				{
+					log.Log(e);
+
+					if (i < 2)
+					{
+						log.LogWarning("Retrying publish ...");
+					}
+				}
+			}
+
+			return true;
+		}
+
+		private static void MonitorJobProgress(CrmServiceClient service, Guid importJobId)
+		{
+			var progress = 0;
+			ImportJob job = null;
+
+			do
+			{
+				Thread.Sleep(5000);
+
+				try
+				{
+					job = service.Retrieve("importjob", importJobId,
+						new ColumnSet(ImportJob.Fields.Progress, ImportJob.Fields.CompletedOn))
+						.ToEntity<ImportJob>();
+
+					var currentProgress = (int?)job.Progress ?? 0;
+
+					if (currentProgress - progress > 5)
+					{
+						log.Log($"... imported {progress = currentProgress}% ...");
+					}
+				}
+				catch
+				{
+					// ignored
+				}
+			}
+			while (job?.CompletedOn == null);
+		}
+
+		private static bool ProcessErrorXml(string importXmlLog)
+		{
+			importXmlLog.RequireNotEmpty(nameof(importXmlLog));
+
+			var isfailed = false;
+
+			try
+			{
+				var doc = new XmlDocument();
+				doc.LoadXml(importXmlLog);
+				var error = doc.SelectSingleNode("//result[@result='failure']/@errortext")?.Value;
+
+				if (error == null)
+				{
+					return false;
+				}
+
+				isfailed = true;
+				log.LogError($"Import failed with the following error (Full log written to import.log):\r\n{error}.");
+			}
+			finally
+			{
+				if (isfailed)
+				{
+					try
+					{
+						var latestIndex = Directory.GetFiles(".")
+							.Select(f => Regex.Match(f, @"import(?:-(\d+))?\.log").Groups[1].Value)
+							.Where(f => f.IsNotEmpty())
+							.Select(int.Parse)
+							.OrderByDescending(f => f)
+							.FirstOrDefault();
+						File.WriteAllText($"import{(latestIndex == 0 && !File.Exists("import.log") ? "" : $"-{latestIndex + 1}")}.log",
+							importXmlLog);
+					}
+					catch
+					{
+						// ignored
+					}
+				}
+			}
+
+			return true;
 		}
 
 		private static string EscapePassword(string connectionString)
@@ -487,7 +717,9 @@ namespace Yagasoft.Tools.BulkDeploySolution
 
 	internal class ImportSolutionConfig : SolutionConfig
 	{
-		public string SourcePath;
+		public string SolutionFolder;
+		public string SolutionFile;
+		public bool IsRegex;
 	}
 
 	internal class ExportedSolution
@@ -496,5 +728,11 @@ namespace Yagasoft.Tools.BulkDeploySolution
 		public string Version;
 		public bool IsManaged;
 		public byte[] Data;
+	}
+
+	internal class NotFoundException : Exception
+	{
+		public NotFoundException(string message) : base(message)
+		{ }
 	}
 }

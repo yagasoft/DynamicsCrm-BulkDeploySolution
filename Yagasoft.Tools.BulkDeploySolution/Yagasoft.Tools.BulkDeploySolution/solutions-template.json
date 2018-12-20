@@ -1,0 +1,16 @@
+{
+	"SolutionConfigs": [
+		{
+			"solutionFolder": "..",
+			"solutionFile": "Test1.*\\.zip",
+			"isRegex": true
+		},
+		{
+			"solutionFile": "Test2_0_0_0_1.zip"
+		},
+		{
+			"solutionName": "Test3",
+			"isManaged": false
+		}
+	]
+}
