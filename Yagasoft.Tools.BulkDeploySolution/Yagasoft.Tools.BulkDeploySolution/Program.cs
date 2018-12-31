@@ -11,7 +11,11 @@ using System.Text.RegularExpressions;
 using System.Threading;
 using System.Xml;
 using LinkDev.Libraries.Common;
+using LinkDev.Libraries.EnhancedOrgService.Helpers;
+using LinkDev.Libraries.EnhancedOrgService.Pools;
+using LinkDev.Libraries.EnhancedOrgService.Services;
 using Microsoft.Crm.Sdk.Messages;
+using Microsoft.Xrm.Sdk;
 using Microsoft.Xrm.Sdk.Messages;
 using Microsoft.Xrm.Sdk.Query;
 using Microsoft.Xrm.Tooling.Connector;
@@ -36,6 +40,8 @@ namespace Yagasoft.Tools.BulkDeploySolution
 		private static bool isAutoRetryOnError;
 		private static int retryCount;
 		private static bool isPauseOnExit = true;
+
+		private static EnhancedServicePool<EnhancedOrgService> connectionPool;
 
 		[NoLog]
 		static int Main(string[] args)
@@ -271,32 +277,16 @@ namespace Yagasoft.Tools.BulkDeploySolution
 				new JsonSerializerSettings { ContractResolver = new CamelCasePropertyNamesContractResolver() });
 		}
 
-		private static CrmServiceClient ConnectToCrm(string connectionString)
+		private static IEnhancedOrgService ConnectToCrm(string connectionString)
 		{
 			connectionString.Require(nameof(connectionString));
+
 			log.Log($"Connecting to '{EscapePassword(connectionString)}' ...");
-
-			if (!connectionString.ToLower().Contains("requirenewinstance"))
-			{
-				connectionString += connectionString.Trim(';') + ";RequireNewInstance=True";
-			}
-
-			var service = new CrmServiceClient(connectionString);
-
-			if (!string.IsNullOrWhiteSpace(service.LastCrmError) || service.LastCrmException != null)
-			{
-				log.LogError($"Failed to connect due to \r\n'{service.LastCrmError}'");
-
-				if (service.LastCrmException != null)
-				{
-					throw service.LastCrmException;
-				}
-
-				return null;
-			}
-
+			connectionPool = connectionPool ?? EnhancedServiceHelper.GetPool(connectionString);
+			connectionPool.GetService().Dispose();
 			log.Log($"Connected!");
-			return service;
+
+			return connectionPool.GetService();
 		}
 
 		private static List<ExportedSolution> ExportSolutions(string sourceConnectionString,
@@ -306,31 +296,27 @@ namespace Yagasoft.Tools.BulkDeploySolution
 			exportSolutions.Require(nameof(exportSolutions));
 			var solutionList = new List<ExportedSolution>();
 
-			var service = ConnectToCrm(sourceConnectionString);
-
-			if (service == null)
+			using (var service = ConnectToCrm(sourceConnectionString))
 			{
+				foreach (var solution in exportSolutions)
+				{
+					try
+					{
+						solutionList.Add(RetrieveSolution(solution, service));
+					}
+					catch
+					{
+						log.Log($"Failed to export solution: '{solution.SolutionName}'.");
+						throw;
+					}
+				}
+
 				return solutionList;
 			}
-
-			foreach (var solution in exportSolutions)
-			{
-				try
-				{
-					solutionList.Add(RetrieveSolution(solution, service));
-				}
-				catch
-				{
-					log.Log($"Failed to export solution: '{solution.SolutionName}'.");
-					throw;
-				}
-			}
-
-			return solutionList;
 		}
 
 		private static ExportedSolution RetrieveSolution(SolutionConfig solutionConfig,
-			CrmServiceClient service)
+			IEnhancedOrgService service)
 		{
 			solutionConfig.Require(nameof(solutionConfig));
 			service.Require(nameof(service));
@@ -365,7 +351,7 @@ namespace Yagasoft.Tools.BulkDeploySolution
 				   };
 		}
 
-		private static string RetrieveSolutionVersion(string solutionName, CrmServiceClient service)
+		private static string RetrieveSolutionVersion(string solutionName, IEnhancedOrgService service)
 		{
 			solutionName.RequireNotEmpty(nameof(solutionName));
 			service.Require(nameof(service));
@@ -475,36 +461,37 @@ namespace Yagasoft.Tools.BulkDeploySolution
 				{
 					log.Log($"Importing solutions into '{EscapePassword(connectionString)}' ...");
 
-					var destinationService = ConnectToCrm(connectionString);
-
-					foreach (var solution in importSolutions)
+					using (var destinationService = ConnectToCrm(connectionString))
 					{
-						try
+						foreach (var solution in importSolutions)
 						{
-							log.Log($"Processing solution '{solution.SolutionName}' ...");
-
-							if (IsSolutionUpdated(solution.SolutionName, solution.Version, destinationService))
+							try
 							{
-								var isImported = ImportSolution(solution, destinationService);
+								log.Log($"Processing solution '{solution.SolutionName}' ...");
 
-								if (!isImported)
+								if (IsSolutionUpdated(solution.SolutionName, solution.Version, destinationService))
 								{
-									failedSolutionList.Add(solution);
+									var isImported = ImportSolution(solution, destinationService);
+
+									if (!isImported)
+									{
+										failedSolutionList.Add(solution);
+									}
+								}
+								else
+								{
+									log.Log("Identical solution versions. Skipping ...");
 								}
 							}
-							else
+							catch (Exception e)
 							{
-								log.Log("Identical solution versions. Skipping ...");
+								log.Log(e);
+								failedSolutionList.Add(solution);
 							}
-						}
-						catch (Exception e)
-						{
-							log.Log(e);
-							failedSolutionList.Add(solution);
-						}
-						finally
-						{
-							log.Log($"Finished processing solution '{solution.SolutionName}'.");
+							finally
+							{
+								log.Log($"Finished processing solution '{solution.SolutionName}'.");
+							}
 						}
 					}
 				}
@@ -525,7 +512,7 @@ namespace Yagasoft.Tools.BulkDeploySolution
 
 		[NoLog]
 		private static bool IsSolutionUpdated(string solutionSolutionName, string solutionVersion,
-			CrmServiceClient service)
+			IEnhancedOrgService service)
 		{
 			solutionSolutionName.RequireNotEmpty(nameof(solutionSolutionName));
 			solutionVersion.RequireNotEmpty(nameof(solutionVersion));
@@ -550,7 +537,7 @@ namespace Yagasoft.Tools.BulkDeploySolution
 			return isUpdated;
 		}
 
-		private static bool ImportSolution(ExportedSolution solution, CrmServiceClient service)
+		private static bool ImportSolution(ExportedSolution solution, IEnhancedOrgService service)
 		{
 			solution.Require(nameof(solution));
 			service.Require(nameof(service));
@@ -578,7 +565,8 @@ namespace Yagasoft.Tools.BulkDeploySolution
 
 			MonitorJobProgress(service, importJobId);
 
-			var job = service.Retrieve("importjob", importJobId, new ColumnSet(ImportJob.Fields.Progress))
+			var job = service.Retrieve("importjob", importJobId,
+					new ColumnSet(ImportJob.Fields.Progress, ImportJob.Fields.Data))
 				.ToEntity<ImportJob>();
 
 			var importXmlLog = job.GetAttributeValue<string>("data");
@@ -620,7 +608,7 @@ namespace Yagasoft.Tools.BulkDeploySolution
 			return true;
 		}
 
-		private static void MonitorJobProgress(CrmServiceClient service, Guid importJobId)
+		private static void MonitorJobProgress(IEnhancedOrgService service, Guid importJobId)
 		{
 			var progress = 0;
 			ImportJob job = null;

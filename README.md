@@ -1,5 +1,5 @@
 # DynamicsCrm-ExportSolution
-### Version: 2.1.1
+### Version: 2.1.2
 ---
 
 A command-line tool that can export multiple solutions and deploy them to multiple environments in one go. Supports manual retry of failed imports during the current run.
@@ -40,6 +40,9 @@ Parameter | Description
 
 ## Changes
 
+#### _v2.1.2 (2019-01-01)_
++ Improved: switched to EnhancedOrgService for better performance
++ Fixed: not handling error in imports
 #### _v2.1.1 (2018-12-20)_
 + Added: progress indicator
 + Added: detailed errors and import log on failure
