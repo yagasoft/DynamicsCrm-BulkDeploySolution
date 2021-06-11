@@ -1,4 +1,4 @@
-# DynamicsCrm-ExportSolution
+# DynamicsCrm-BulkDeploySolution
 
 (No longer maintained!)
 
