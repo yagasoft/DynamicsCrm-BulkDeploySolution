@@ -1,4 +1,7 @@
 # DynamicsCrm-ExportSolution
+
+(No longer maintained!)
+
 ### Version: 2.1.2
 ---
 
